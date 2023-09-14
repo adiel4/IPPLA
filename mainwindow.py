@@ -2,10 +2,11 @@ from PyQt6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QWidget, QSiz
 from PyQt6.QtCore import Qt
 from childform import ChildForm
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Main Window")
+        self.setWindowTitle("Главное окно")
         self.setFixedSize(500, 300)
 
         self.central_widget = QWidget()
@@ -14,12 +15,12 @@ class MainWindow(QMainWindow):
         self.layout = QVBoxLayout(self.central_widget)
         self.layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.button1 = QPushButton("Open Child Form 1", self)
+        self.button1 = QPushButton("Открыть форму Температуры", self)
         self.layout.addWidget(self.button1)
         self.button1.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.button1.clicked.connect(self.on_button1_click)
 
-        self.button2 = QPushButton("Open Child Form 2", self)
+        self.button2 = QPushButton("Открыть форму Ветра", self)
         self.layout.addWidget(self.button2)
         self.button2.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.button2.clicked.connect(self.on_button2_click)
