@@ -15,7 +15,6 @@ class WindForm(QDialog):
         self.setGeometry(x, y, 1000, 500)
 
         self.close_button = QPushButton("Закрыть", self)
-        self.close_button.move(1000, 500)
         self.close_button.clicked.connect(self.close)
 
     def closeEvent(self, event):

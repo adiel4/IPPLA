@@ -5,8 +5,10 @@ from PyQt6.QtCore import pyqtSignal
 class TempForm(QDialog):
     closed = pyqtSignal()  # Define a custom signal
 
-    def __init__(self, parent=None):
+    def __init__(self, file_path, parent=None):
         super().__init__(parent)
+
+        self.file_path = file_path  # Store the file path as an instance variable
 
         self.setWindowTitle("Температура")
         screen = QApplication.primaryScreen().availableGeometry()
