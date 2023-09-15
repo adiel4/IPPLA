@@ -1,8 +1,12 @@
 import os
 import sys
+from turtledemo.chaos import h
+
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QListView, QGridLayout, \
     QLabel, QFileDialog, QMessageBox
 from PyQt6.QtCore import pyqtSignal, QStringListModel
+
+import decorators
 from tempform import TempForm
 from windform import WindForm
 
@@ -44,12 +48,10 @@ class MainWindow(QMainWindow):
 
         self.files_caption = QLabel('Список файлов', self)
         self.files_caption.alignment()
-        self.files_caption.setFixedWidth(100)
         grid_layout.addWidget(self.files_list, 0, 0)
 
         self.load_button = QPushButton("Загрузка", self)
         self.load_button.clicked.connect(self.load_files_from_folder)
-        self.load_button.setFixedWidth(100)
         grid_layout.addWidget(self.load_button, 1, 0)
 
         self.temp_button = QPushButton("Открыть форму Температуры", self)
@@ -69,8 +71,15 @@ class MainWindow(QMainWindow):
 
     def load_files_from_folder(self):
         directory_path = QFileDialog.getExistingDirectory(self, "Choose Directory")
+        existing_items = self.list_model.stringList()
 
         if directory_path:
+            if directory_path in existing_items:
+                message_box = QMessageBox(self)
+                message_box.setWindowTitle("Dataset уже в списке")
+                message_box.setText("Этот Dataset уже в списке.")
+                message_box.exec()
+                return
             file_list = [f for f in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, f))]
             if all(not f.lower().endswith('.nc') for f in file_list):
                 message_box = QMessageBox(self)
@@ -79,7 +88,6 @@ class MainWindow(QMainWindow):
                 message_box.exec()
                 return
 
-            existing_items = self.list_model.stringList()
             updated_items = existing_items + [directory_path]
             self.list_model.setStringList(updated_items)
             self.file_path = directory_path
@@ -91,28 +99,16 @@ class MainWindow(QMainWindow):
             message_box.setText("Новый Dataset загружен.")
             message_box.exec()
 
+    @decorators.require_file_path
     def open_temp_form(self):
-        if not self.file_path:
-            message_box = QMessageBox(self)
-            message_box.setWindowTitle("Dataset не выбран")
-            message_box.setText("Dataset не выбран, загрузите или выберите нужный Dataset.")
-            message_box.exec()
-            return None
-
         if not self.temp_form:
             self.temp_form = TempForm(self)
             self.temp_form.closed.connect(self.enable_buttons)
             self.temp_button.setDisabled(True)
             self.temp_form.show()
 
+    @decorators.require_file_path
     def open_wind_form(self):
-        if not self.file_path:
-            message_box = QMessageBox(self)
-            message_box.setWindowTitle("Dataset не выбран")
-            message_box.setText("Dataset не выбран, загрузите или выберите нужный Dataset.")
-            message_box.exec()
-            return None
-
         if not self.wind_form:
             self.wind_form = WindForm(self)
             self.wind_form.closed.connect(self.enable_buttons)
