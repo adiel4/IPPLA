@@ -3,7 +3,7 @@ from PyQt6.QtCore import pyqtSignal
 
 
 class WindForm(QDialog):
-    closed = pyqtSignal()  # Define a custom signal
+    closed = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -18,5 +18,5 @@ class WindForm(QDialog):
         self.close_button.clicked.connect(self.close)
 
     def closeEvent(self, event):
-        self.closed.emit()  # Emit the custom signal when the form is closed
+        self.closed.emit()
         event.accept()

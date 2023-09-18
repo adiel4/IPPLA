@@ -81,10 +81,10 @@ class MainWindow(QMainWindow):
                 message_box.exec()
                 return
             file_list = [f for f in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, f))]
-            if all(not f.lower().endswith('.nc') for f in file_list):
+            if all(not f.lower().endswith(('.nc', '.nc4')) for f in file_list):
                 message_box = QMessageBox(self)
                 message_box.setWindowTitle("No Dataset Found")
-                message_box.setText("Не все файлы в папке имеют формат .nc или .nc4")
+                message_box.setText("Не все файлы в папке имеют формат .nc")
                 message_box.exec()
                 return
 
@@ -102,7 +102,7 @@ class MainWindow(QMainWindow):
     @decorators.require_file_path
     def open_temp_form(self):
         if not self.temp_form:
-            self.temp_form = TempForm(self)
+            self.temp_form = TempForm(self.file_path)
             self.temp_form.closed.connect(self.enable_buttons)
             self.temp_button.setDisabled(True)
             self.temp_form.show()

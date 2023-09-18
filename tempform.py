@@ -1,14 +1,16 @@
 from PyQt6.QtWidgets import QDialog, QPushButton, QApplication
 from PyQt6.QtCore import pyqtSignal
+import dataset
 
 
 class TempForm(QDialog):
-    closed = pyqtSignal()  # Define a custom signal
+    closed = pyqtSignal()
 
     def __init__(self, file_path, parent=None):
         super().__init__(parent)
 
-        self.file_path = file_path  # Store the file path as an instance variable
+        self.dataset = dataset.Dataset()
+        self.dataset.load_from_directory(file_path)
 
         self.setWindowTitle("Температура")
         screen = QApplication.primaryScreen().availableGeometry()
@@ -20,5 +22,5 @@ class TempForm(QDialog):
         self.close_button.clicked.connect(self.close)
 
     def closeEvent(self, event):
-        self.closed.emit()  # Emit the custom signal when the form is closed
+        self.closed.emit()
         event.accept()
