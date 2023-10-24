@@ -1,12 +1,13 @@
 import os
 import sys
-from turtledemo.chaos import h
 
+from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QVBoxLayout, QWidget, QListView, QGridLayout, \
     QLabel, QFileDialog, QMessageBox
-from PyQt6.QtCore import pyqtSignal, QStringListModel
+from PyQt6.QtCore import QStringListModel
 
 import decorators
+from downloader import Downloader
 from tempform import TempForm
 from windform import WindForm
 
@@ -15,6 +16,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.downloader = None
         self.file_path = None
         self.list_model = None
         self.files_caption = None
@@ -62,12 +64,33 @@ class MainWindow(QMainWindow):
         self.wind_button.clicked.connect(self.open_wind_form)
         grid_layout.addWidget(self.wind_button, 1, 1)
 
+        load_action = QAction("Загрузка", self)
+        load_action.setStatusTip("Загрузка файла в приложение")
+        load_action.triggered.connect(self.load_files_from_folder)
+        load_action.setCheckable(True)
+
+        download_action = QAction("Скачать", self)
+        download_action.setStatusTip("Скачать файлы для дальнейшей обработки")
+        download_action.triggered.connect(self.download_using_wget)
+        download_action.setCheckable(True)
+
+        menu = self.menuBar()
+
+        file_menu = menu.addMenu('Файл')
+        file_menu.addAction(load_action)
+        file_menu.addAction(download_action)
+
         self.list_model = QStringListModel()
         self.files_list.setModel(self.list_model)
 
         self.temp_form = None
         self.wind_form = None
         self.layout.addLayout(grid_layout)
+
+    def download_using_wget(self):
+        if not self.downloader:
+            self.downloader = Downloader()
+            self.downloader.show()
 
     def load_files_from_folder(self):
         directory_path = QFileDialog.getExistingDirectory(self, "Choose Directory")

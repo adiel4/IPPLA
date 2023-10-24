@@ -1,0 +1,5 @@
+# HSTS 1.0 Known Hosts database for GNU Wget.
+# Edit at your own risk.
+# <hostname>	<port>	<incl. subdomains>	<created>	<max-age>
+urs.earthdata.nasa.gov	0	0	1698142648	31536000
+goldsmr5.gesdisc.eosdis.nasa.gov	0	1	1698142655	31536000
