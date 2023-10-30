@@ -1,11 +1,13 @@
-import asyncio
-import subprocess
+import os
+import re
+
+import aiohttp
+from PyQt6.QtCore import pyqtSlot
 from PyQt6.QtWidgets import (
     QFileDialog, QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit,
     QPushButton, QTextEdit, QMessageBox
 )
 import sys
-import os
 
 
 class Downloader(QWidget):
@@ -28,7 +30,7 @@ class Downloader(QWidget):
         self.password_input.setText('adiletI1')
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.download_button = QPushButton("Скачать")
-        self.download_button.clicked.connect(self.download_using_wget)
+        self.download_button.clicked.connect(self.download)
         self.log_output = QTextEdit()
 
         layout = QVBoxLayout()
@@ -44,55 +46,43 @@ class Downloader(QWidget):
     def show_success_message():
         msg_box = QMessageBox()
         msg_box.setIcon(QMessageBox.Icon.Information)
-        msg_box.setWindowTitle("Success")
-        msg_box.setText("Download completed successfully.")
+        msg_box.setWindowTitle("Успех")
+        msg_box.setText("Загрузка успешно завершена.")
         msg_box.exec()
 
-    async def run_wget_command(self, wget_command):
-        process = await asyncio.create_subprocess_shell(
-            wget_command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-
-        async for line in process.stdout:
-            self.log_output.append(line.decode())
-
-        async for line in process.stderr:
-            self.log_output.append(line.decode())
-
-        await process.wait()
-        print(process.returncode)
-        if process.returncode in (0, 4):
-            self.log_output.append("Download completed successfully.")
-            self.show_success_message()
-        else:
-            self.log_output.append("Error occurred during download.")
-
-    def download_using_wget(self):
+    @pyqtSlot()
+    def download(self):
         username = self.username_input.text()
         password = self.password_input.text()
-
         target_dir = QFileDialog.getExistingDirectory(self, "Выберите папку")
         if not target_dir:
             self.log_output.append("Не выбрана папка.")
             return
-
-        file_paths = QFileDialog.getOpenFileNames(self, "Choose Text File", "", "Text files (*.txt)")
+        file_paths = QFileDialog.getOpenFileNames(self, "Выберите текстовый файл", "", "Text files (*.txt)")
         if not file_paths[0]:
             self.log_output.append("Не выбран файл.")
             return
 
-        text_file_path = file_paths[0][0]
-        self.log_output.append("Selected text file: " + text_file_path)
+    @pyqtSlot()
+    def download_finished(self):
+        self.log_output.append("Download process completed.")
 
-        wget_command = f'wget --no-check-certificate --keep-session-cookies --http-user={username} ' \
-                       f'--http-password={password} --content-disposition --directory-prefix={target_dir} ' \
-                       f'-i {text_file_path}'
-
-        self.download_button.setDisabled(True)
-        asyncio.run(self.run_wget_command(wget_command))
-        self.download_button.setDisabled(False)
+    async def download_file(self, username, password, url, target_dir):
+        async with self.session.get(url, auth=aiohttp.BasicAuth(username, password)) as response:
+            if response.status == 200:
+                # Extract the date from the URL
+                date_match = re.search(r'\d{8}', url)  # Assumes the date is an 8-digit number in the URL
+                if date_match:
+                    date = date_match.group()
+                    extension = os.path.splitext(url)[-1]
+                    filename = f"{date}{extension}"
+                    save_path = os.path.join(target_dir, filename)
+                    with open(save_path, 'wb') as f:
+                        f.write(await response.read())
+                else:
+                    self.log_output.append(f"Failed to extract date from the URL: {url}")
+            else:
+                self.log_output.append(f"Failed to download: {url}")
 
 
 if __name__ == '__main__':
