@@ -67,12 +67,12 @@ class MainWindow(QMainWindow):
         load_action = QAction("Загрузка", self)
         load_action.setStatusTip("Загрузка файла в приложение")
         load_action.triggered.connect(self.load_files_from_folder)
-        load_action.setCheckable(True)
+        load_action.setCheckable(False)
 
         download_action = QAction("Скачать", self)
         download_action.setStatusTip("Скачать файлы для дальнейшей обработки")
         download_action.triggered.connect(self.download_using_wget)
-        download_action.setCheckable(True)
+        download_action.setCheckable(False)
 
         menu = self.menuBar()
 

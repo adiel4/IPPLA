@@ -1,13 +1,10 @@
-import os
-import re
-import aiohttp
-from PyQt6.QtCore import pyqtSlot
+import asyncio
 from PyQt6.QtWidgets import (
     QFileDialog, QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit,
     QPushButton, QTextEdit, QMessageBox
 )
+from PyQt6.QtGui import QTextCursor
 import sys
-import asyncio
 
 
 class Downloader(QWidget):
@@ -18,20 +15,17 @@ class Downloader(QWidget):
         self.show()
 
     def init_ui(self):
-        screen = QApplication.primaryScreen().availableGeometry()
-        x = (screen.width() - 800) // 2
-        y = (screen.height() - 400) // 2
-        self.setGeometry(x, y, 800, 400)
-        self.username_label = QLabel("Enter username:")
+        self.username_label = QLabel("Enter your username:")
         self.username_input = QLineEdit(self)
         self.username_input.setText('vgophap')
-        self.password_label = QLabel("Enter password:")
+        self.password_label = QLabel("Enter your password:")
         self.password_input = QLineEdit(self)
         self.password_input.setText('adiletI1')
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.download_button = QPushButton("Download")
-        self.download_button.clicked.connect(self.download)
+        self.download_button.clicked.connect(self.download_using_wget)
         self.log_output = QTextEdit()
+        self.log_output.setReadOnly(True)
 
         layout = QVBoxLayout()
         layout.addWidget(self.username_label)
@@ -42,50 +36,61 @@ class Downloader(QWidget):
         layout.addWidget(self.log_output)
         self.setLayout(layout)
 
-    @staticmethod
-    def show_success_message():
-        msg_box = QMessageBox()
-        msg_box.setIcon(QMessageBox.Icon.Information)
-        msg_box.setWindowTitle("Success")
-        msg_box.setText("Download completed successfully.")
-        msg_box.exec()
+    async def run_wget_command(self, wget_command):
+        process = await asyncio.create_subprocess_shell(
+            wget_command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
 
-    @pyqtSlot()
-    def download(self):
+        async for line in process.stdout:
+            self.append_log(line.decode(), "green")
+
+        async for line in process.stderr:
+            self.append_log(line.decode(), "red")
+
+        await process.wait()
+
+        if process.returncode == 0:
+            self.append_log("Download completed successfully.", "green")
+        else:
+            self.append_log("Error occurred during download.", "red")
+
+    def append_log(self, text, color):
+        cursor = self.log_output.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        formatted_text = f'<span style="color: {color};">{text}</span>'
+        cursor.insertHtml(formatted_text)
+        self.log_output.setTextCursor(cursor)
+        self.log_output.ensureCursorVisible()
+
+    def download_using_wget(self):
         username = self.username_input.text()
         password = self.password_input.text()
-        target_dir = QFileDialog.getExistingDirectory(self, "Choose a directory")
+
+        # Get the target directory for downloads
+        target_dir = QFileDialog.getExistingDirectory(self, "Choose Target Directory")
         if not target_dir:
-            self.log_output.append("No directory selected.")
+            self.append_log("No target directory selected. Exiting.", "red")
             return
-        file_paths = QFileDialog.getOpenFileNames(self, "Choose a text file", "", "Text files (*.txt)")
+
+        file_paths = QFileDialog.getOpenFileNames(self, "Choose Text File", "", "Text files (*.txt)")
         if not file_paths[0]:
-            self.log_output.append("No file selected.")
+            self.append_log("No file selected. Exiting.", "red")
             return
 
-        for file_path in file_paths[0]:
-            with open(file_path, 'r') as file:
-                for line in file:
-                    line = line.strip()
-                    asyncio.run(self.download_file(username, password, line, target_dir))
+        text_file_path = file_paths[0][0]
+        self.append_log("Selected text file: " + text_file_path, "green")
 
-    async def download_file(self, username, password, url, target_dir):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, auth=aiohttp.BasicAuth(username, password), ssl=False) as response:
-                if response.status == 200:
-                    date_match = re.search(r'\d{8}', url)
-                    if date_match:
-                        date = date_match.group()
-                        extension = os.path.splitext(url)[-1]
-                        filename = f"{date}{extension}"
-                        save_path = os.path.join(target_dir, filename)
-                        with open(save_path, 'wb') as f:
-                            f.write(await response.read())
-                            self.log_output.append(f"Downloaded: {url}")
-                else:
-                    self.log_output.append(f"Failed to download: {url}")
+        # Prepare the wget command without SSL certificate verification
+        wget_command = f'wget --no-check-certificate --keep-session-cookies --http-user={username} ' \
+                       f'--http-password={password} --content-disposition --directory-prefix={target_dir} ' \
+                       f'-i {text_file_path}'
+
+        # Run the wget command asynchronously
+        asyncio.run(self.run_wget_command(wget_command))
 
 
 if __name__ == '__main__':
     downloader = Downloader()
-    sys.exit(downloader.app.exec())
+    sys.exit(downloader.app.exec_())
